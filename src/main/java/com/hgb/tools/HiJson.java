@@ -1,12 +1,12 @@
 package com.hgb.tools;
 
+import com.hgb.tools.config.ApplicationConfiguration;
 import com.hgb.tools.element.JCloseableTabbedPane;
 import com.hgb.tools.element.JsonFindDialog;
 import com.hgb.tools.element.JsonFormatterTab;
 import com.hgb.tools.element.JsonReplaceDialog;
 import com.hgb.tools.element.StatusBar;
 import com.hgb.tools.utils.CommonUtils;
-import org.fife.rsta.ui.CollapsibleSectionPanel;
 import org.fife.rsta.ui.GoToDialog;
 import org.fife.rsta.ui.search.FindToolBar;
 import org.fife.rsta.ui.search.ReplaceToolBar;
@@ -23,77 +23,40 @@ import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.prefs.Preferences;
+
+import static com.hgb.tools.config.ApplicationConfiguration.prefs;
 
 public class HiJson extends JFrame implements SearchListener {
     private static final Logger logger = LoggerFactory.getLogger(HiJson.class);
 
-    private final Preferences prefs = Preferences.userRoot().node("com/hgb/tools/hijson");
-    private static final String PREF_WINDOW_WIDTH = "windowWidth";
-    private static final String PREF_WINDOW_HEIGHT = "windowHeight";
-
-
-    private final JCloseableTabbedPane tabbedPane; // Tab 容器
+    private JCloseableTabbedPane tabbedPane; // Tab 容器
     private JsonFindDialog findDialog;
     private JsonReplaceDialog replaceDialog;
     private FindToolBar findToolBar;
     private ReplaceToolBar replaceToolBar;
-    private final StatusBar statusBar;
-    private final CollapsibleSectionPanel csp;
+    private StatusBar statusBar;
     private JFileChooser fileDialog;
-    private String lastSavePath;
     private JToolBar toolBar;
 
 
     public HiJson() {
-        loadSettings();
+        ApplicationConfiguration.loadSettings();
+
         setTitle("HiJson");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-
-
-        // 创建工具栏
+        setSize(ApplicationConfiguration.WINDOW_WIDTH, ApplicationConfiguration.WINDOW_HEIGHT);
+        initLookAndFeel();
         initToolBar();
-
-        // 将工具栏添加到窗口的顶部
-        csp = new CollapsibleSectionPanel();
-        getContentPane().add(csp);
-
-        statusBar = new StatusBar();
-        getContentPane().add(statusBar, BorderLayout.SOUTH);
-
-        // 创建 Tab 容器
-        tabbedPane = new JCloseableTabbedPane();
-        //添加关闭按钮事件  
-        tabbedPane.addCloseListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                if (!e.getActionCommand().equals(JCloseableTabbedPane.ON_TAB_CLOSE)) {
-                    return;
-                }
-                // 弹出确认关闭
-                int result = JOptionPane.showConfirmDialog(
-                        null, // 父组件（null表示没有父窗口）
-                        "Confirm to close this Tab page？", // 对话框的提示信息
-                        "Confirm", // 对话框的标题
-                        JOptionPane.YES_NO_OPTION, // 可选按钮
-                        JOptionPane.WARNING_MESSAGE); // 消息类型：问题类型
-                if (result == JOptionPane.YES_OPTION) {
-                    tabbedPane.removeTabAt(tabbedPane.getSelectedIndex());
-                }
-            }
-        });
-        getContentPane().add(tabbedPane, BorderLayout.CENTER);
-
-        // 创建一个新的 Tab 页面，初始化它
-        addNewTab();
+        initStatusBar();
+        initTabPane();
         initSearchDialogs();
-        setJMenuBar(createMenuBar());
+        initMenuBar();
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(WindowEvent winEvt) {
                 saveSettings();
@@ -102,53 +65,89 @@ public class HiJson extends JFrame implements SearchListener {
         setVisible(true);
     }
 
+    private void initLookAndFeel() {
+        try {
+            UIManager.setLookAndFeel(prefs.get(ApplicationConfiguration.PREF_LOOK_AND_FEEL, UIManager.getSystemLookAndFeelClassName()));
+        } catch (Exception e) {
+            logger.error("SetLookAndFeel Error occurred", e);
+        }
+    }
+
+    private void initStatusBar() {
+        statusBar = new StatusBar();
+        getContentPane().add(statusBar, BorderLayout.SOUTH);
+    }
+
+    private void initTabPane() {
+        // 创建 Tab 容器
+        tabbedPane = new JCloseableTabbedPane();
+        //添加关闭按钮事件  
+        tabbedPane.addCloseListener(e -> {
+            if (!e.getActionCommand().equals(JCloseableTabbedPane.ON_TAB_CLOSE)) {
+                return;
+            }
+            // 弹出确认关闭
+            int result = JOptionPane.showConfirmDialog(
+                    null, // 父组件（null表示没有父窗口）
+                    "确认关闭页面", // 对话框的提示信息
+                    "确认", // 对话框的标题
+                    JOptionPane.YES_NO_OPTION, // 可选按钮
+                    JOptionPane.WARNING_MESSAGE); // 消息类型：问题类型
+            if (result == JOptionPane.YES_OPTION) {
+                tabbedPane.removeTabAt(tabbedPane.getSelectedIndex());
+            }
+        });
+        getContentPane().add(tabbedPane, BorderLayout.CENTER);
+        // 创建一个新的 Tab 页面，初始化它
+        addNewTab();
+    }
+
     private void initToolBar() {
         toolBar = new JToolBar();
         toolBar.setFloatable(false); // 禁止工具栏漂浮
         toolBar.setBorder(BorderFactory.createEmptyBorder());
 
         // 创建按钮
-        JButton formatButton = new JButton("Format");
+        JButton formatButton = new JButton("格式化");
         formatButton.addActionListener(e -> formatJsonInActiveTab());
+        formatButton.setBackground(Color.YELLOW);
 
-        JButton newTabButton = new JButton("New Tab");
+        JButton newTabButton = new JButton("新标签");
         newTabButton.addActionListener(e -> addNewTab());
-        JButton minifyJsonButton = new JButton("Minify Json ");
+        JButton minifyJsonButton = new JButton("压缩");
         minifyJsonButton.addActionListener(e -> minifyJsonInActiveTab());
+        JButton escapeButton = new JButton("(反)转义");
+        escapeButton.addActionListener(e -> escapeJsonInActiveTab());
 
 
         // 将按钮添加到工具栏
-        toolBar.add(formatButton);
         toolBar.add(newTabButton);
+        toolBar.add(escapeButton);
+        toolBar.add(formatButton);
         toolBar.add(minifyJsonButton);
         add(toolBar, BorderLayout.NORTH);
     }
 
 
-    private JMenuBar createMenuBar() {
+    private void initMenuBar() {
 
         JMenuBar mb = new JMenuBar();
-
-        JMenu menu = new JMenu("File");
+        JMenu menu = new JMenu("文件");
         menu.add(new JMenuItem(new ShowFileDialogAction()));
-        menu.addSeparator();
+        mb.add(menu);
+        menu = new JMenu("编辑");
         menu.add(new JMenuItem(new ShowFindDialogAction()));
         menu.add(new JMenuItem(new ShowReplaceDialogAction()));
         menu.add(new JMenuItem(new GoToLineAction()));
-
-
         mb.add(menu);
-
-        menu = new JMenu("LookAndFeel");
+        menu = new JMenu("主题");
         ButtonGroup bg = new ButtonGroup();
         UIManager.LookAndFeelInfo[] infos = UIManager.getInstalledLookAndFeels();
         for (UIManager.LookAndFeelInfo info : infos) {
             addItem(new LookAndFeelAction(info), bg, menu);
         }
         mb.add(menu);
-
-        return mb;
-
+        setJMenuBar(mb);
     }
 
 
@@ -158,22 +157,15 @@ public class HiJson extends JFrame implements SearchListener {
     private void initSearchDialogs() {
 
         findDialog = new JsonFindDialog(this, this);
-
         replaceDialog = new JsonReplaceDialog(this, this);
 
-        fileDialog = new JFileChooser(lastSavePath == null ? System.getProperty("user.home") + "/Downloads" : lastSavePath);
+        fileDialog = new JFileChooser(ApplicationConfiguration.LAST_SAVE_PATH);
         String fileName = "hijson.json";
         File saveFile = new File(fileName);
         fileDialog.setSelectedFile(saveFile);
-
-
-        // This ties the properties of the two dialogs together (match case,
-        // regex, etc.).
         SearchContext context = findDialog.getSearchContext();
         context.setMarkAll(false);
         replaceDialog.setSearchContext(context);
-
-        // Create toolbars and tie their search contexts together also.
         findToolBar = new FindToolBar(this);
         findToolBar.setSearchContext(context);
         replaceToolBar = new ReplaceToolBar(this);
@@ -185,16 +177,30 @@ public class HiJson extends JFrame implements SearchListener {
     private void addNewTab() {
         // 创建一个新的 JsonFormatterTab，表示每个标签页
         JsonFormatterTab tab = new JsonFormatterTab();
-
         // 创建标签页的标题
         String tabTitle = "  Tab  " + (tabbedPane.getTabCount() + 1) + "  ";
-
         // 将新标签页添加到 Tab 容器中
         tabbedPane.addTab(tabTitle, tab);  // 先添加 Tab 页
-
-
         // 使新 Tab 页面成为当前选中的页面
         tabbedPane.setSelectedComponent(tab);
+    }
+
+    private void escapeJsonInActiveTab() {
+        long start = System.currentTimeMillis();
+        if (tabbedPane.getTabCount() == 0) {
+            return;
+        }
+        RSyntaxTextArea jsonInputTextArea = getActiveTab().getJsonInputTextArea();
+        String jsonStr = jsonInputTextArea.getText();
+        if (jsonInputTextArea.isBracketMatchingEnabled()) {
+            jsonInputTextArea.setBracketMatchingEnabled(false);
+        }
+        if (jsonStr.contains("\\")) {
+            jsonInputTextArea.setText(CommonUtils.unescape(jsonStr));
+        } else {
+            jsonInputTextArea.setText(CommonUtils.escape(jsonStr));
+        }
+        logger.debug("Escape Json cost time: {} ms", System.currentTimeMillis() - start);
     }
 
     private void minifyJsonInActiveTab() {
@@ -219,10 +225,6 @@ public class HiJson extends JFrame implements SearchListener {
             return;
         }
         getActiveTab().formatJson();  // 调用当前 Tab 页的 JSON 格式化方法
-    }
-
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(HiJson::new);
     }
 
 
@@ -254,14 +256,14 @@ public class HiJson extends JFrame implements SearchListener {
                 && currentTextArea.getText().length() > CommonUtils.REMARK_ALL_UNLIMITED_TEXT_LENGTH_MAXIMUM
                 && !currentTextArea.isBracketMatchingEnabled()) {
             // 查找全部，text大于最大限制长度，没有格式化
-            statusBar.setLabel("The text is too long, please format it first.", Color.RED);
+            statusBar.setLabel("内容太长，请先格式化！", Color.RED);
             return;
         }
 
         if (type == SearchEvent.Type.REPLACE_ALL
                 && currentTextArea.getText().length() > CommonUtils.REPLACE_ALL_UNLIMITED_TEXT_LENGTH_MAXIMUM) {
             // 全部标记，text大于最大限制长度，没有格式化
-            statusBar.setLabel("The text is too long to replace all.", Color.RED);
+            statusBar.setLabel("内容太长，不支持全部替换！", Color.RED);
             return;
         }
 
@@ -284,26 +286,26 @@ public class HiJson extends JFrame implements SearchListener {
                 break;
             case REPLACE_ALL:
                 result = SearchEngine.replaceAll(currentTextArea, context);
-                JOptionPane.showMessageDialog(null, result.getCount() + " occurrences replaced.");
+                JOptionPane.showMessageDialog(null, result.getCount() + " 处已替换");
                 break;
         }
 
         String text;
         if (result.wasFound()) {
-            text = "Text found";
+            text = "已找到";
             if (result.getMarkedCount() > 0) {
-                text += "; occurrences marked: " + result.getMarkedCount();
+                text += "：" + result.getMarkedCount();
             }
             statusBar.setLabel(text, Color.BLACK);
         } else if (type == SearchEvent.Type.MARK_ALL) {
             if (result.getMarkedCount() > 0) {
-                text = "Occurrences marked: " + result.getMarkedCount();
+                text = "已找到: " + result.getMarkedCount();
             } else {
                 text = "";
             }
             statusBar.setLabel(text, Color.BLACK);
         } else {
-            text = "Text not found";
+            text = "未找到";
             statusBar.setLabel(text, Color.RED);
         }
 
@@ -321,7 +323,7 @@ public class HiJson extends JFrame implements SearchListener {
     private class GoToLineAction extends AbstractAction {
 
         GoToLineAction() {
-            super("Go To Line...");
+            super("跳转到...");
             int c = getToolkit().getMenuShortcutKeyMask();
             putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_L, c));
         }
@@ -347,7 +349,7 @@ public class HiJson extends JFrame implements SearchListener {
                     currentTextArea.setCaretPosition(currentTextArea.getLineStartOffset(line - 1));
                 } catch (BadLocationException ble) { // Never happens
                     UIManager.getLookAndFeel().provideErrorFeedback(currentTextArea);
-                    ble.printStackTrace();
+                    logger.debug("Go to line error", ble);
                 }
             }
         }
@@ -380,7 +382,7 @@ public class HiJson extends JFrame implements SearchListener {
             } catch (RuntimeException re) {
                 throw re; // FindBugs
             } catch (Exception ex) {
-                ex.printStackTrace();
+                logger.error("SetLookAndFeel Error occurred", ex);
             }
         }
     }
@@ -392,7 +394,7 @@ public class HiJson extends JFrame implements SearchListener {
     private class ShowFindDialogAction extends AbstractAction {
 
         ShowFindDialogAction() {
-            super("Find...");
+            super("查找...");
             int c = getToolkit().getMenuShortcutKeyMask();
             putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_F, c));
         }
@@ -411,7 +413,7 @@ public class HiJson extends JFrame implements SearchListener {
     private class ShowFileDialogAction extends AbstractAction {
 
         ShowFileDialogAction() {
-            super("Save...");
+            super("保存...");
             int c = getToolkit().getMenuShortcutKeyMask();
             putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_S, c));
         }
@@ -446,7 +448,7 @@ public class HiJson extends JFrame implements SearchListener {
     private class ShowReplaceDialogAction extends AbstractAction {
 
         ShowReplaceDialogAction() {
-            super("Replace...");
+            super("替换...");
             int c = getToolkit().getMenuShortcutKeyMask();
             putValue(ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_R, c));
         }
@@ -467,38 +469,17 @@ public class HiJson extends JFrame implements SearchListener {
         menu.add(item);
     }
 
+    private void saveSettings() {
 
-    private void loadSettings() {
-        // 加载窗口大小
-        int windowWidth = prefs.getInt(PREF_WINDOW_WIDTH, 1000); // 默认值为 1000
-        int windowHeight = prefs.getInt(PREF_WINDOW_HEIGHT, 600); // 默认值为 600
-        setSize(windowWidth, windowHeight);
-        // 加载设置
-        // 读取文件对话框上次的保存路径
-        lastSavePath = prefs.get("lastFilePath", System.getProperty("user.home") + "/Downloads");
-
-
-        // 读取 Look and Feel
-        String lookAndFeel = prefs.get("lookAndFeel", "javax.swing.plaf.metal.MetalLookAndFeel");
-        try {
-            UIManager.setLookAndFeel(lookAndFeel);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        prefs.putInt(ApplicationConfiguration.PREF_WINDOW_WIDTH, getWidth());
+        prefs.putInt(ApplicationConfiguration.PREF_WINDOW_HEIGHT, getHeight());
+        prefs.put(ApplicationConfiguration.PREF_LOOK_AND_FEEL, UIManager.getLookAndFeel().getClass().getName());
+        prefs.put(ApplicationConfiguration.PREF_LAST_SAVE_PATH, fileDialog.getCurrentDirectory().getAbsolutePath());
     }
 
-    private void saveSettings() {
-        // 保存设置
-        // 保存窗口大小
-        prefs.putInt(PREF_WINDOW_WIDTH, getWidth());
-        prefs.putInt(PREF_WINDOW_HEIGHT, getHeight());
 
-        // 保存文件对话框上次的保存路径
-        prefs.put("lastFilePath", fileDialog.getCurrentDirectory().getAbsolutePath());
-
-        // 保存 Look and Feel
-        prefs.put("lookAndFeel", UIManager.getLookAndFeel().getClass().getName());
-
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(HiJson::new);
     }
 
 

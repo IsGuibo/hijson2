@@ -27,7 +27,7 @@ public class CommonUtils {
 
     public static final int REMARK_ALL_UNLIMITED_TEXT_LENGTH_MAXIMUM = 500000;
     public static final int REPLACE_ALL_UNLIMITED_TEXT_LENGTH_MAXIMUM = 100000;
-
+    
 
     public static String TreePath2JsonPath(TreePath treePath) {
         StringBuilder jsonPath = new StringBuilder();
@@ -181,4 +181,25 @@ public class CommonUtils {
     }
 
 
+    public static String unescape(String text) {
+        text = text.replaceAll("\\\\\"", "\"");
+        if (text.startsWith("\"") && text.endsWith("\"")) {
+            text = text.substring(1, text.length() - 1);
+        }
+        return text;
+
+    }
+
+    public static String escape(String text) {
+
+        text = text.replaceAll("\"", "\\\\\"");
+        return "\"" + text + "\"";
+
+    }
+
+
+
+
+
+    
 }
