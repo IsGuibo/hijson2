@@ -1,0 +1,19 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="jsonformat:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/jsonformat_jar</output-path>
+    <root id="archive" name="jsonformat.jar">
+      <element id="module-output" name="jsonformat" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/minidev/accessors-smart/2.5.0/accessors-smart-2.5.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-api/1.7.21/slf4j-api-1.7.21.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/fifesoft/rstaui/3.3.1/rstaui-3.3.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/fifesoft/autocomplete/3.3.1/autocomplete-3.3.1.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/fifesoft/rsyntaxtextarea/3.3.2/rsyntaxtextarea-3.3.2.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/ch/qos/logback/logback-classic/1.1.3/logback-classic-1.1.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/net/minidev/json-smart/2.5.0/json-smart-2.5.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/jayway/jsonpath/json-path/2.9.0/json-path-2.9.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/ch/qos/logback/logback-core/1.1.3/logback-core-1.1.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/ow2/asm/asm/9.3/asm-9.3.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/alibaba/fastjson/1.2.1/fastjson-1.2.1.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>
