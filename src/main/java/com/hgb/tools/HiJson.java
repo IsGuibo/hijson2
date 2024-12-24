@@ -1,12 +1,15 @@
 package com.hgb.tools;
 
+import com.formdev.flatlaf.FlatIntelliJLaf;
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.hgb.tools.config.ApplicationConfiguration;
-import com.hgb.tools.element.JCloseableTabbedPane;
 import com.hgb.tools.element.JsonFindDialog;
 import com.hgb.tools.element.JsonFormatterTab;
 import com.hgb.tools.element.JsonReplaceDialog;
 import com.hgb.tools.element.StatusBar;
 import com.hgb.tools.utils.CommonUtils;
+import com.jidesoft.swing.JideTabbedPane;
 import org.fife.rsta.ui.GoToDialog;
 import org.fife.rsta.ui.search.FindToolBar;
 import org.fife.rsta.ui.search.ReplaceToolBar;
@@ -34,7 +37,7 @@ import static com.hgb.tools.config.ApplicationConfiguration.prefs;
 public class HiJson extends JFrame implements SearchListener {
     private static final Logger logger = LoggerFactory.getLogger(HiJson.class);
 
-    private JCloseableTabbedPane tabbedPane; // Tab 容器
+    private JideTabbedPane tabbedPane; // Tab 容器
     private JsonFindDialog findDialog;
     private JsonReplaceDialog replaceDialog;
     private FindToolBar findToolBar;
@@ -80,23 +83,11 @@ public class HiJson extends JFrame implements SearchListener {
 
     private void initTabPane() {
         // 创建 Tab 容器
-        tabbedPane = new JCloseableTabbedPane();
-        //添加关闭按钮事件  
-        tabbedPane.addCloseListener(e -> {
-            if (!e.getActionCommand().equals(JCloseableTabbedPane.ON_TAB_CLOSE)) {
-                return;
-            }
-            // 弹出确认关闭
-            int result = JOptionPane.showConfirmDialog(
-                    null, // 父组件（null表示没有父窗口）
-                    "确认关闭页面", // 对话框的提示信息
-                    "确认", // 对话框的标题
-                    JOptionPane.YES_NO_OPTION, // 可选按钮
-                    JOptionPane.WARNING_MESSAGE); // 消息类型：问题类型
-            if (result == JOptionPane.YES_OPTION) {
-                tabbedPane.removeTabAt(tabbedPane.getSelectedIndex());
-            }
-        });
+        tabbedPane = new JideTabbedPane();
+        tabbedPane.setShowCloseButtonOnTab(true);
+        tabbedPane.setShowCloseButtonOnMouseOver(true);
+       
+
         getContentPane().add(tabbedPane, BorderLayout.CENTER);
         // 创建一个新的 Tab 页面，初始化它
         addNewTab();
@@ -108,21 +99,24 @@ public class HiJson extends JFrame implements SearchListener {
         toolBar.setBorder(BorderFactory.createEmptyBorder());
 
         // 创建按钮
-        JButton formatButton = new JButton("格式化");
+        JButton formatButton = new JButton("格式化(F)");
         formatButton.addActionListener(e -> formatJsonInActiveTab());
-        formatButton.setBackground(Color.YELLOW);
 
-        JButton newTabButton = new JButton("新标签");
+        JButton newTabButton = new JButton("新标签(N)");
         newTabButton.addActionListener(e -> addNewTab());
-        JButton minifyJsonButton = new JButton("压缩");
+        JButton minifyJsonButton = new JButton("压缩(M)");
         minifyJsonButton.addActionListener(e -> minifyJsonInActiveTab());
-        JButton escapeButton = new JButton("(反)转义");
+        JButton escapeButton = new JButton("转义(E)");
         escapeButton.addActionListener(e -> escapeJsonInActiveTab());
+        JButton reEscapeButton = new JButton("反转义(R)");
+        reEscapeButton.addActionListener(e -> escapeJsonInActiveTab());
+        
 
 
         // 将按钮添加到工具栏
         toolBar.add(newTabButton);
         toolBar.add(escapeButton);
+        toolBar.add(reEscapeButton);
         toolBar.add(formatButton);
         toolBar.add(minifyJsonButton);
         add(toolBar, BorderLayout.NORTH);
@@ -143,9 +137,12 @@ public class HiJson extends JFrame implements SearchListener {
         menu = new JMenu("主题");
         ButtonGroup bg = new ButtonGroup();
         UIManager.LookAndFeelInfo[] infos = UIManager.getInstalledLookAndFeels();
+
         for (UIManager.LookAndFeelInfo info : infos) {
             addItem(new LookAndFeelAction(info), bg, menu);
         }
+        addItem(new LookAndFeelAction(new UIManager.LookAndFeelInfo("FlatIntelliJLaf", FlatIntelliJLaf.class.getName())), bg, menu);
+        addItem(new LookAndFeelAction(new UIManager.LookAndFeelInfo("FlatMacLightLaf", FlatMacLightLaf.class.getName())), bg, menu);
         mb.add(menu);
         setJMenuBar(mb);
     }
@@ -178,7 +175,7 @@ public class HiJson extends JFrame implements SearchListener {
         // 创建一个新的 JsonFormatterTab，表示每个标签页
         JsonFormatterTab tab = new JsonFormatterTab();
         // 创建标签页的标题
-        String tabTitle = "  Tab  " + (tabbedPane.getTabCount() + 1) + "  ";
+        String tabTitle = "Tab " + (tabbedPane.getTabCount() + 1);
         // 将新标签页添加到 Tab 容器中
         tabbedPane.addTab(tabTitle, tab);  // 先添加 Tab 页
         // 使新 Tab 页面成为当前选中的页面
@@ -379,8 +376,6 @@ public class HiJson extends JFrame implements SearchListener {
                     replaceDialog.updateUI();
                 }
                 pack();
-            } catch (RuntimeException re) {
-                throw re; // FindBugs
             } catch (Exception ex) {
                 logger.error("SetLookAndFeel Error occurred", ex);
             }
@@ -479,6 +474,7 @@ public class HiJson extends JFrame implements SearchListener {
 
 
     public static void main(String[] args) {
+        FlatLightLaf.setup();
         SwingUtilities.invokeLater(HiJson::new);
     }
 

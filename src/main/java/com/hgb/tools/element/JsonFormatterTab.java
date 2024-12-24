@@ -43,7 +43,6 @@ public class JsonFormatterTab extends JPanel {
     private Object JsonObj;
     private boolean autoNavigate = false;
     private final RTextScrollPane inputScrollPane;
-    private final boolean hasFormat = false;
 
 
     public JsonFormatterTab() {

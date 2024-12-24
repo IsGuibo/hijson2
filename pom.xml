@@ -52,7 +52,16 @@
             <artifactId>slf4j-api</artifactId>
             <version>1.7.21</version> <!-- 请根据需要选择版本 -->
         </dependency>
-
+        <dependency>
+            <groupId>com.formdev</groupId>
+            <artifactId>flatlaf</artifactId>
+            <version>3.5.4</version>
+        </dependency>
+        <dependency>
+            <groupId>com.jidesoft</groupId>
+            <artifactId>jide-oss</artifactId>
+            <version>3.6.18</version>
+        </dependency>
 
     </dependencies>
     <build>
@@ -74,7 +83,7 @@
                             <bundleJre>false</bundleJre>
                             <generateInstaller>true</generateInstaller>
                             <administratorRequired>false</administratorRequired>
-                            <platform>auto</platform>
+                            <platform>windows</platform>
                             <vmArgs>-Xms256m -Xmx256m</vmArgs>
                             <name>HiJson2</name>
                             <displayName>HiJson2</displayName>
